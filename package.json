@@ -1,0 +1,83 @@
+{
+  "name": "graphql-schema-tools",
+  "version": "0.0.0",
+  "description": "Functions & Utilitize for creating and stiching graphql schema",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "jam": {
+    "main": "./dist/index.browser.js"
+  },
+  "browser": {
+    "dist/index.js": "./dist/index.browser.js"
+  },
+  "scripts": {
+    "build": "webpack || echo not ok",
+    "test": "jest",
+    "test:watch": "npm test -- --watch",
+    "coverage": "npm test -- --coverage --no-cache",
+    "coverage:watch": "npm run coverage -- --watch",
+    "prepare": "npm run build && npm test",
+    "release": "standard-version && npm pack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DxCx/graphql-schema-tools.git"
+  },
+  "keywords": [
+    "graphql",
+    "typescript",
+    "graphql-tools",
+    "graphql-schema",
+    "schema",
+    "stiching",
+    "stich",
+    "subscriptions"
+  ],
+  "author": "Hagai Cohen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DxCx/graphql-schema-tools/issues"
+  },
+  "homepage": "https://github.com/DxCx/graphql-schema-tools#readme",
+  "peerDependencies": {
+    "graphql": "^0.10.0 || ^0.11.0"
+  },
+  "devDependencies": {
+    "@types/graphql": "^0.11.0",
+    "@types/jest": "^20.0.8",
+    "@types/node": "^8.0.26",
+    "browserify": "^14.4.0",
+    "delete-empty": "^1.0.1",
+    "graphql": "^0.11.2",
+    "jest": "^20.0.4",
+    "standard-version": "^4.2.0",
+    "ts-jest": "^20.0.14",
+    "ts-loader": "^2.3.4",
+    "tslint": "^5.7.0",
+    "tslint-loader": "^3.5.3",
+    "typescript": "2.5.2",
+    "webpack": "3.5.5",
+    "webpack-node-externals": "^1.6.0"
+  },
+  "dependencies": {},
+  "jest": {
+    "transform": {
+      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "mapCoverage": true,
+    "collectCoverageFrom": [
+      "src/**/*.ts"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/__tests__/",
+      "/node_modules/"
+    ],
+    "testEnvironment": "node",
+    "testRegex": "__tests__/.*\\.spec\\.ts$",
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+*
+!yarn.lock
+!src/
+!src/**/*
+!*.js
+!*.json
+!*.md
+!.gitignore
+!.travis.yml
+!LICENSE
+!.npmignore
