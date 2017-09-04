@@ -1,5 +1,7 @@
 *
 !yarn.lock
+!__tests__/
+!__tests__/**/*
 !src/
 !src/**/*
 !*.js

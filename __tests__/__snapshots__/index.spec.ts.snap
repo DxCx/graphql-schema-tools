@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`addResolveFunctionsToSchema Works for basic schema 1`] = `
+Object {
+  "data": Object {
+    "simpleInt": 0,
+  },
+}
+`;

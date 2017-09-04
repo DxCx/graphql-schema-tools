@@ -6,6 +6,7 @@
   "typings": "dist/index.d.ts",
   "scripts": {
     "build": "webpack || echo not ok",
+    "lint": "tslint src/**/*.ts",
     "test": "jest",
     "test:watch": "npm test -- --watch",
     "coverage": "npm test -- --coverage --no-cache",
