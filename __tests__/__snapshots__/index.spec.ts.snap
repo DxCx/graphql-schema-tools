@@ -18,3 +18,42 @@ Object {
   },
 }
 `;
+
+exports[`makeExecutableSchema Able to compose simple schema 1`] = `
+Object {
+  "data": Object {
+    "simpleInt": 0,
+  },
+}
+`;
+
+exports[`makeExecutableSchema Able to concat simple type definition 1`] = `
+Object {
+  "data": Object {
+    "simpleInt": 0,
+    "simpleString": "Hello",
+  },
+}
+`;
+
+exports[`makeExecutableSchema concats subscriptions as well 1`] = `
+Object {
+  "done": false,
+  "value": Object {
+    "data": Object {
+      "simpleString": "Hello",
+    },
+  },
+}
+`;
+
+exports[`makeExecutableSchema works for subscriptions as well 1`] = `
+Object {
+  "done": false,
+  "value": Object {
+    "data": Object {
+      "simpleInt": 0,
+    },
+  },
+}
+`;

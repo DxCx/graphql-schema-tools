@@ -6,6 +6,7 @@ import {
   addSubscriptionChannelsToSchema,
   addResolveFunctionsToSchema,
   getScehmaResolvers,
+  makeExecutableSchema,
 } from '../src';
 import {
   parse,
@@ -614,3 +615,153 @@ describe('getScehmaSubscriptions', () => {
   });
 });
 
+describe('makeExecutableSchema', () => {
+  it('Should be pass sanity', () => {
+    expect(typeof makeExecutableSchema).toBe('function');
+  });
+
+  it('Able to compose simple schema', async () => {
+    const schema = makeExecutableSchema({
+      typeDefs: `
+        type Query {
+          simpleInt: Int
+        }
+      `,
+      resolvers: {
+        Query: {
+          simpleInt: () => 0,
+        },
+      },
+    });
+
+    const query = `query {
+      simpleInt
+    }`;
+
+    const result = await graphql(schema, query);
+
+    expect(result).toMatchSnapshot();
+  });
+
+  it('Able to concat simple type definition', async () => {
+    const schema = makeExecutableSchema({
+      typeDefs: [`
+        enum Test {
+          TEST_ONE
+          TEST_TWO
+        }
+
+        type Query {
+          simpleInt: Int
+        }
+      `, `
+        type Query {
+          simpleString: String
+        }
+      `],
+      resolvers: [{
+        Query: {
+          simpleInt: () => 0,
+        },
+      }, {
+        Query: {
+          simpleString: () => 'Hello',
+        },
+      }],
+    });
+
+    const query = `query {
+      simpleInt
+      simpleString
+    }`;
+
+    const result = await graphql(schema, query);
+
+    expect(result).toMatchSnapshot();
+  });
+
+  it('works for subscriptions as well', async () => {
+      let subVisit = false;
+      let resolveVisit = false;
+      const schema = makeExecutableSchema({
+        typeDefs: `
+          type Subscription {
+            simpleInt: Int
+          }
+
+          type Query {
+            simpleInt: Int
+          }
+        `,
+        resolvers: {
+          Subscription: {
+            simpleInt: () => {
+              resolveVisit = true;
+              return 0;
+            },
+          },
+          Query: {
+            simpleInt: () => 0,
+          },
+        },
+        subscriptions: {
+          simpleInt: () => {
+            subVisit = true;
+            return createAsyncIterator([ 0 ]);
+          },
+        },
+      });
+
+      const query = `subscription {
+        simpleInt
+      }`;
+
+      const result = await (await (subscribe(schema, parse(query)))).next();
+
+      expect(subVisit).toBe(true);
+      expect(resolveVisit).toBe(true);
+      expect(result).toMatchSnapshot();
+  });
+
+  it('concats subscriptions as well', async () => {
+      const schema = makeExecutableSchema({
+        typeDefs: [`
+          type Subscription {
+            simpleInt: Int
+          }
+
+          type Query {
+            simpleInt: Int
+          }
+        `, `
+          type Subscription {
+            simpleString: String
+          }
+        `],
+        resolvers: [{
+          Subscription: {
+            simpleInt: () => 0,
+          },
+          Query: {
+            simpleInt: () => 0,
+          },
+        }, {
+          Subscription: {
+            simpleString: (root) => root,
+          },
+        }],
+        subscriptions: [{
+          simpleInt: () => createAsyncIterator([ 0 ]),
+        }, {
+          simpleString: () => createAsyncIterator([ 'Hello' ]),
+        }],
+      });
+
+      const query = `subscription {
+        simpleString
+      }`;
+
+      const result = await (await (subscribe(schema, parse(query)))).next();
+      expect(result).toMatchSnapshot();
+  });
+});

@@ -1,4 +1,12 @@
 import {
+  parse,
+  print,
+  buildASTSchema,
+  buildSchema,
+  extendSchema,
+  printSchema,
+  Kind,
+
   GraphQLBoolean,
   GraphQLField,
   GraphQLFieldMap,
@@ -15,7 +23,8 @@ import {
   GraphQLString,
   GraphQLType,
   GraphQLUnionType,
-} from "graphql";
+} from 'graphql';
+import { recursive as merge } from 'merge';
 
 export interface IResolvers<TSource, TContext> {
   [typeName: string]: GraphQLScalarType | {
@@ -27,13 +36,105 @@ export interface ISubscriptions<TSource, TContext>  {
   [fieldName: string]: GraphQLFieldResolver<TSource, TContext>;
 }
 
+export function concatTypeDefs(typeDefs: string[]): string {
+  const EXTEND = 'extend ';
+  const concatResult = typeDefs
+  .map((typeDef) => parse(typeDef))
+  .reduce((state, typeDef) => {
+    const thisTypeMap = [];
+    const thisExtentions = [];
+    const rawDef = typeDef.definitions.map((def) => {
+      if ( def.kind !== Kind.OBJECT_TYPE_DEFINITION ) {
+        return def;
+      }
+      const typeName = def.name.value;
+      if ( (-1 === state.typeMap.indexOf(typeName)) &&
+           (-1 === thisTypeMap.indexOf(typeName)) ) {
+        thisTypeMap.push(typeName);
+        return def;
+      }
+
+      const newStart = def.loc.start;
+      const newEnd = def.loc.end + EXTEND.length;
+      def.loc.start = EXTEND.length;
+      def.loc.end = newEnd;
+
+      thisExtentions.push({
+        kind: Kind.TYPE_EXTENSION_DEFINITION,
+        definition: def,
+        loc: {
+          start: newStart,
+          end: newEnd,
+        },
+      });
+
+      return null;
+    }).filter((v) => v !== null);
+
+    return {
+      extentions: [ ...state.extentions, ...thisExtentions ],
+      typeMap: [ ...state.typeMap, ...thisTypeMap ],
+      typeDefs: [ ...state.typeDefs, ...rawDef ],
+    };
+  }, {
+    extentions: [],
+    typeMap: [],
+    typeDefs: [],
+  });
+
+  const schema = extendSchema(buildASTSchema({
+    kind: Kind.DOCUMENT,
+    definitions: concatResult.typeDefs,
+  }), {
+    kind: Kind.DOCUMENT,
+    definitions: concatResult.extentions,
+  });
+
+  return printSchema(schema);
+}
+
+export function concatResolvers<TSource, TContext>(
+  resolvers: IResolvers<TSource, TContext>[],
+): IResolvers<TSource, TContext> {
+  return mergeObjects(resolvers);
+}
+
+export function concatSubscriptions<TSource, TContext>(
+  subscriptions: ISubscriptions<TSource, TContext>[],
+): ISubscriptions<TSource, TContext> {
+  return mergeObjects(subscriptions);
+}
+
+export function makeExecutableSchema<TSource, TContext>(options: {
+  typeDefs: string | string[],
+  resolvers: (IResolvers<TSource, TContext> | IResolvers<TSource, TContext>[]),
+  subscriptions?: (ISubscriptions<TSource, TContext> | ISubscriptions<TSource, TContext>[]),
+}): GraphQLSchema {
+  const argTypeDefs: string[] = forceArray(options.typeDefs);
+  const argResolvers: IResolvers<TSource, TContext>[] = forceArray<IResolvers<TSource, TContext>>(options.resolvers);
+  const finalTypeDef = concatTypeDefs(argTypeDefs);
+  const schema = buildSchema(finalTypeDef);
+  const finalResolvers = concatResolvers(argResolvers);
+
+  addResolveFunctionsToSchema(schema, finalResolvers);
+
+  if ( options.subscriptions &&
+      (Object.keys(options.subscriptions).length > 0) ) {
+    const argSubscriptions = forceArray<ISubscriptions<TSource, TContext>>(options.subscriptions);
+    const finalSubscriptions = concatSubscriptions(argSubscriptions);
+    addSubscriptionChannelsToSchema(schema, finalSubscriptions);
+  }
+
+  return schema;
+};
+
 export function addSubscriptionChannelsToSchema<TSource, TContext>(
   schema: GraphQLSchema,
   subscriptionFunctions: ISubscriptions<TSource, TContext>,
 ) {
   const type = schema.getSubscriptionType();
   if ( !type ) {
-    throw new Error("No Subscription Type for schema");
+    throw new Error('No Subscription Type for schema');
   }
   const typeName = type.name;
 
@@ -47,7 +148,7 @@ export function addSubscriptionChannelsToSchema<TSource, TContext>(
 
   Object.keys(subscriptionFunctions).forEach((fieldName) => {
     const fieldSubscribe = subscriptionFunctions[fieldName];
-    if (typeof fieldSubscribe !== "function") {
+    if (typeof fieldSubscribe !== 'function') {
       throw new Error(`"${fieldName}" is not a function`);
     }
 
@@ -70,15 +171,18 @@ export function getScehmaSubscriptions<TSource, TContext>(schema: GraphQLSchema)
   const fields = type.getFields();
 
   return Object.keys(fields).reduce((resolvers, fieldName) => {
-    if ( typeof fields[fieldName].subscribe !== "function" ) {
+    // tslint:disable-next-line
+    const subChannel = fields[fieldName]['subscribe'];
+
+    if ( typeof subChannel !== 'function' ) {
       return resolvers;
     }
 
     return {
-      ...(resolvers || {}),
-      [fieldName]: fields[fieldName].subscribe,
+      ...resolvers,
+      [fieldName]: subChannel,
     };
-  }, undefined);
+  }, {});
 }
 
 export function addResolveFunctionsToSchema<TSource, TContext>(
@@ -87,7 +191,7 @@ export function addResolveFunctionsToSchema<TSource, TContext>(
 ) {
   Object.keys(resolveFunctions).forEach((typeName) => {
     const type = schema.getType(typeName);
-    if (!type && typeName !== "__schema") {
+    if (!type && typeName !== '__schema') {
       throw new Error(
         `"${typeName}" defined in resolvers, but not in schema`,
       );
@@ -104,12 +208,12 @@ export function addResolveFunctionsToSchema<TSource, TContext>(
         }
       }
 
-      if (fieldName.startsWith("__")) {
-        setTypeProperty(type, fieldName, fieldResolve);
+      if (fieldName.startsWith('__')) {
+        setTypeProperty(type, typeName, fieldName, fieldResolve);
         return;
       }
 
-      if (typeof fieldResolve !== "function") {
+      if (typeof fieldResolve !== 'function') {
         throw new Error(`"${typeName}.${fieldName}" is not a function`);
       }
 
@@ -135,7 +239,7 @@ export function addResolveFunctionsToSchema<TSource, TContext>(
 export function getScehmaResolvers<TSource, TContext>(schema: GraphQLSchema): IResolvers<TSource, TContext> {
   return Object.keys(schema.getTypeMap()).reduce((types, typeName) => {
     // Skip internal types.
-    if ( typeName.startsWith("__") ) {
+    if ( typeName.startsWith('__') ) {
       return types;
     }
 
@@ -144,12 +248,16 @@ export function getScehmaResolvers<TSource, TContext>(schema: GraphQLSchema): IR
 
     if ( type instanceof GraphQLObjectType ) {
       if ( type.isTypeOf ) {
-        fieldResolvers.__isTypeOf = type.isTypeOf;
+        Object.assign(fieldResolvers, {
+          __isTypeOf: type.isTypeOf,
+        });
       }
     } else if ( (type instanceof GraphQLUnionType) ||
                 (type instanceof GraphQLInterfaceType) ) {
       if ( type.resolveType ) {
-        fieldResolvers.__resolveType = type.resolveType;
+        Object.assign(fieldResolvers, {
+          __resolveType: type.resolveType,
+        });
       }
     } else if ( (type instanceof GraphQLScalarType) ) {
       if ( isBaseScalar(type) ) {
@@ -188,18 +296,19 @@ export function getScehmaResolvers<TSource, TContext>(schema: GraphQLSchema): IR
 }
 
 function setTypeProperty<TSource, TContext>(
-  type: GraphQLNamedType,
+  type: GraphQLType,
+  typeName: string,
   fieldName: string,
   fieldResolve: GraphQLFieldResolver<TSource, TContext>,
 ): void {
   let invalid = false;
   if ( type instanceof GraphQLObjectType ) {
-    if ( fieldName !== "__isTypeOf" ) {
+    if ( fieldName !== '__isTypeOf' ) {
       invalid = true;
     }
   } else if ( (type instanceof GraphQLUnionType) ||
               (type instanceof GraphQLInterfaceType) ) {
-    if ( fieldName !== "__resolveType" ) {
+    if ( fieldName !== '__resolveType' ) {
       invalid = true;
     }
   } else {
@@ -207,7 +316,7 @@ function setTypeProperty<TSource, TContext>(
   }
 
   if ( invalid ) {
-    throw new Error(`"${type.name}.${fieldName}" invalid fieldName`);
+    throw new Error(`"${typeName}.${fieldName}" invalid fieldName`);
   }
 
   type[fieldName.substring(2)] = fieldResolve;
@@ -241,4 +350,12 @@ function isBaseScalar(type: GraphQLScalarType): boolean {
     GraphQLBoolean,
     GraphQLID,
   ].some((t) => (type.name === t.name));
+}
+
+function forceArray<T>(v: (T | T[])): T[] {
+  return Array.isArray(v) ? v : [v];
+}
+
+function mergeObjects<T>(objects: T[]): T {
+  return objects.reduce((last, next) => merge(true, last, next), {});
 }
