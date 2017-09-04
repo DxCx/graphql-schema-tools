@@ -38,6 +38,7 @@ export function addSubscriptionChannelsToSchema<TSource, TContext>(
   const typeName = type.name;
 
   const fields = getFieldsForType(type);
+  /* istanbul ignore if hell went loose */
   if (!fields) {
     throw new Error(
       `Subscription type ${typeName} is invalid`,
@@ -52,7 +53,7 @@ export function addSubscriptionChannelsToSchema<TSource, TContext>(
 
     if (!fields[fieldName]) {
       throw new Error(
-        `${fieldName} defined in subscription channels, but not in schema`,
+        `"${fieldName}" defined in subscription channels, but not in schema`,
       );
     }
 

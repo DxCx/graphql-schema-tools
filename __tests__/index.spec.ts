@@ -1,8 +1,20 @@
 'use strict';
 
 import 'jest';
-import { addResolveFunctionsToSchema, getScehmaResolvers } from '../src';
-import { GraphQLScalarType, graphql, buildSchema } from 'graphql';
+import {
+  getScehmaSubscriptions,
+  addSubscriptionChannelsToSchema,
+  addResolveFunctionsToSchema,
+  getScehmaResolvers,
+} from '../src';
+import {
+  parse,
+  subscribe,
+  GraphQLScalarType,
+  graphql,
+  buildSchema,
+} from 'graphql';
+import { createAsyncIterator } from 'iterall';
 
 describe('addResolveFunctionsToSchema', () => {
     it('Should be pass sanity', () => {
@@ -412,3 +424,193 @@ describe('getScehmaResolvers', () => {
       expect(resolvers).toEqual(originalResolvers);
     });
 });
+
+describe('addSubscriptionChannelsToSchema', () => {
+  it('Should be pass sanity', () => {
+    expect(typeof addSubscriptionChannelsToSchema).toBe('function');
+  });
+
+  it('Should work on simple example', async () => {
+      const schema = buildSchema(`
+        type Subscription {
+          simpleInt: Int
+        }
+
+        type Query {
+          simpleInt: Int
+        }
+      `);
+
+      let subVisit = false;
+      addResolveFunctionsToSchema(schema, {
+        Subscription: {
+          simpleInt: () => 0,
+        },
+        Query: {
+          simpleInt: () => 0,
+        },
+      });
+      addSubscriptionChannelsToSchema(schema, {
+        simpleInt: () => {
+          subVisit = true;
+          return createAsyncIterator([ 0 ]);
+        },
+      });
+      const query = `subscription {
+        simpleInt
+      }`;
+
+      const result = await (await (subscribe(schema, parse(query)))).next();
+
+      expect(subVisit).toBe(true);
+      expect(result).toMatchSnapshot();
+  });
+
+  it("Should Fail if no subscription", () => {
+    const schema = buildSchema(`
+      type Query {
+        simpleInt: Int
+      }
+    `);
+
+    try {
+      addSubscriptionChannelsToSchema(schema, {
+        simpleInt: () => null,
+      });
+    } catch (e) {
+      expect(e.message).toBe('No Subscription Type for schema');
+      return
+    }
+
+    // Shouldn't get here.
+    expect(false).toBe(true);
+  });
+
+  it("Should reject non-functions", () => {
+    const schema = buildSchema(`
+      type Subscription {
+        simpleInt: Int
+      }
+
+      type Query {
+        simpleInt: Int
+      }
+    `);
+
+    try {
+      addSubscriptionChannelsToSchema(schema, {
+        simpleInt: 0,
+      } as any);
+    } catch (e) {
+      expect(e.message).toBe('"simpleInt" is not a function');
+      return
+    }
+
+    // Shouldn't get here.
+    expect(false).toBe(true);
+  });
+
+  it("Should reject undefined fields", () => {
+    const schema = buildSchema(`
+      type Subscription {
+        simpleInt: Int
+      }
+
+      type Query {
+        simpleInt: Int
+      }
+    `);
+
+    try {
+      addSubscriptionChannelsToSchema(schema, {
+        simpleString: () => 'Hello',
+      });
+    } catch (e) {
+      expect(e.message).toBe('"simpleString" defined in subscription channels, but not in schema');
+      return
+    }
+
+    // Shouldn't get here.
+    expect(false).toBe(true);
+  });
+});
+
+describe('getScehmaSubscriptions', () => {
+  it('Should be pass sanity', () => {
+    expect(typeof getScehmaSubscriptions).toBe('function');
+  });
+
+  it('Should work on simple example', () => {
+      const schema = buildSchema(`
+        type Subscription {
+          simpleInt: Int
+        }
+
+        type Query {
+          simpleInt: Int
+        }
+      `);
+
+      addResolveFunctionsToSchema(schema, {
+        Subscription: {
+          simpleInt: () => 0,
+        },
+        Query: {
+          simpleInt: () => 0,
+        },
+      });
+      const originalSubscriptions = {
+        simpleInt: () => createAsyncIterator([ 0 ]),
+      };
+      addSubscriptionChannelsToSchema(schema, originalSubscriptions);
+
+      const subscriptions = getScehmaSubscriptions(schema);
+      expect(subscriptions).toEqual(originalSubscriptions);
+  });
+
+  it('returns empty object if no subscriptions', () => {
+      const schema = buildSchema(`
+        type Query {
+          simpleInt: Int
+        }
+      `);
+
+      addResolveFunctionsToSchema(schema, {
+        Query: {
+          simpleInt: () => 0,
+        },
+      });
+      const subscriptions = getScehmaSubscriptions(schema);
+      expect(subscriptions).toEqual({});
+  });
+
+  it('does not return subscription if not given', () => {
+      const schema = buildSchema(`
+        type Subscription {
+          simpleInt: Int
+          simpleString: String
+        }
+
+        type Query {
+          simpleInt: Int
+        }
+      `);
+
+      addResolveFunctionsToSchema(schema, {
+        Subscription: {
+          simpleInt: () => 0,
+        },
+        Query: {
+          simpleInt: () => 0,
+        },
+      });
+      const originalSubscriptions = {
+        simpleInt: () => createAsyncIterator([ 0 ]),
+      };
+      addSubscriptionChannelsToSchema(schema, originalSubscriptions);
+
+      const subscriptions = getScehmaSubscriptions(schema);
+      expect(subscriptions).toEqual(originalSubscriptions);
+  });
+});
+

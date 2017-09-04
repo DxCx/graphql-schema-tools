@@ -7,3 +7,14 @@ Object {
   },
 }
 `;
+
+exports[`addSubscriptionChannelsToSchema Should work on simple example 1`] = `
+Object {
+  "done": false,
+  "value": Object {
+    "data": Object {
+      "simpleInt": 0,
+    },
+  },
+}
+`;
