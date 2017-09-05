@@ -118,11 +118,13 @@ export function makeExecutableSchema<TSource, TContext>(options: {
 
   addResolveFunctionsToSchema(schema, finalResolvers);
 
-  if ( options.subscriptions &&
-      (Object.keys(options.subscriptions).length > 0) ) {
+  if ( options.subscriptions ) {
     const argSubscriptions = forceArray<ISubscriptions<TSource, TContext>>(options.subscriptions);
     const finalSubscriptions = concatSubscriptions(argSubscriptions);
-    addSubscriptionChannelsToSchema(schema, finalSubscriptions);
+
+    if ( Object.keys(finalSubscriptions).length > 0 ) {
+      addSubscriptionChannelsToSchema(schema, finalSubscriptions);
+    }
   }
 
   return schema;
