@@ -36,6 +36,17 @@ export interface ISubscriptions<TSource, TContext>  {
   [fieldName: string]: GraphQLFieldResolver<TSource, TContext>;
 }
 
+export interface IExecutableSchemaParts<TSource, TContext> {
+  typeDefs: string | string[],
+  resolvers: (IResolvers<TSource, TContext> | IResolvers<TSource, TContext>[]),
+  subscriptions?: (ISubscriptions<TSource, TContext> | ISubscriptions<TSource, TContext>[]),
+}
+
+/*
+ * This function is used to concat an array of graphql type defentions
+ * in one type definition which contains all data.
+ * Object types with the same name will be merged.
+ */
 export function concatTypeDefs(typeDefs: string[]): string {
   const EXTEND = 'extend ';
   const concatResult = typeDefs
@@ -93,29 +104,38 @@ export function concatTypeDefs(typeDefs: string[]): string {
   return printSchema(schema);
 }
 
+/*
+ * This function is used to concat an array of resolvers object
+ * in one resolvers object which contains all resolvers.
+ */
 export function concatResolvers<TSource, TContext>(
   resolvers: IResolvers<TSource, TContext>[],
 ): IResolvers<TSource, TContext> {
   return mergeObjects(resolvers);
 }
 
+/*
+ * This function is used to concat an array of subscriptions object
+ * in one subscriptions object which contains all resolvers.
+ */
 export function concatSubscriptions<TSource, TContext>(
   subscriptions: ISubscriptions<TSource, TContext>[],
 ): ISubscriptions<TSource, TContext> {
   return mergeObjects(subscriptions);
 }
 
-export function makeExecutableSchema<TSource, TContext>(options: {
-  typeDefs: string | string[],
-  resolvers: (IResolvers<TSource, TContext> | IResolvers<TSource, TContext>[]),
-  subscriptions?: (ISubscriptions<TSource, TContext> | ISubscriptions<TSource, TContext>[]),
-}): GraphQLSchema {
+/*
+ * This function is used to compose schema from
+ * typeDefs + resolvers and optionally subscriptions.
+ * returns an executable GraphQLSchema.
+ */
+export function composeSchema<TSource, TContext>(options: IExecutableSchemaParts<TSource, TContext>): GraphQLSchema {
   const argTypeDefs: string[] = forceArray(options.typeDefs);
   const argResolvers: IResolvers<TSource, TContext>[] = forceArray<IResolvers<TSource, TContext>>(options.resolvers);
   const finalTypeDef = concatTypeDefs(argTypeDefs);
   const schema = buildSchema(finalTypeDef);
-  const finalResolvers = concatResolvers(argResolvers);
 
+  const finalResolvers = concatResolvers(argResolvers);
   addResolveFunctionsToSchema(schema, finalResolvers);
 
   if ( options.subscriptions ) {
@@ -128,8 +148,33 @@ export function makeExecutableSchema<TSource, TContext>(options: {
   }
 
   return schema;
+}
+export function makeExecutableSchema<TSource, TContext>(
+  options: IExecutableSchemaParts<TSource, TContext>,
+): GraphQLSchema {
+  return composeSchema(options);
+}
+
+/*
+ * This function is used to decompose schema and extract
+ * typeDefs + resolvers and optionally subscriptions.
+ *
+ * returns IExecutableSchemaParts object with just one item per part.
+ */
+export function decomposeSchema<TSource, TContext>(
+  schema: GraphQLSchema,
+): IExecutableSchemaParts<TSource, TContext> {
+  return {
+    typeDefs: printSchema(schema),
+    resolvers: getScehmaResolvers(schema),
+    subscriptions: getScehmaSubscriptions(schema),
+  };
 };
 
+/*
+ * This function is used to attach subscriptions
+ * object into given schema.
+ */
 export function addSubscriptionChannelsToSchema<TSource, TContext>(
   schema: GraphQLSchema,
   subscriptionFunctions: ISubscriptions<TSource, TContext>,
@@ -164,6 +209,10 @@ export function addSubscriptionChannelsToSchema<TSource, TContext>(
   });
 }
 
+/*
+ * This function is used to get subscriptions
+ * object from given schema.
+ */
 export function getScehmaSubscriptions<TSource, TContext>(schema: GraphQLSchema): ISubscriptions<TSource, TContext> {
   const type = schema.getSubscriptionType();
   if ( !type ) {
@@ -187,6 +236,10 @@ export function getScehmaSubscriptions<TSource, TContext>(schema: GraphQLSchema)
   }, {});
 }
 
+/*
+ * This function is used to attach resolvers
+ * object into given schema.
+ */
 export function addResolveFunctionsToSchema<TSource, TContext>(
   schema: GraphQLSchema,
   resolveFunctions: IResolvers<TSource, TContext>,
@@ -237,7 +290,10 @@ export function addResolveFunctionsToSchema<TSource, TContext>(
   });
 }
 
-// get schema Resolvers, might be nice to open a PR for graphql-tools.
+/*
+ * This function is used to get resolvers
+ * object from given schema.
+ */
 export function getScehmaResolvers<TSource, TContext>(schema: GraphQLSchema): IResolvers<TSource, TContext> {
   return Object.keys(schema.getTypeMap()).reduce((types, typeName) => {
     // Skip internal types.

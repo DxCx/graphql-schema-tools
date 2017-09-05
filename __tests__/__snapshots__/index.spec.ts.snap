@@ -19,7 +19,7 @@ Object {
 }
 `;
 
-exports[`makeExecutableSchema Able to compose simple schema 1`] = `
+exports[`composeSchema Able to compose simple schema 1`] = `
 Object {
   "data": Object {
     "simpleInt": 0,
@@ -27,7 +27,7 @@ Object {
 }
 `;
 
-exports[`makeExecutableSchema Able to concat simple type definition 1`] = `
+exports[`composeSchema Able to concat simple type definition 1`] = `
 Object {
   "data": Object {
     "simpleInt": 0,
@@ -36,7 +36,7 @@ Object {
 }
 `;
 
-exports[`makeExecutableSchema concats subscriptions as well 1`] = `
+exports[`composeSchema concats subscriptions as well 1`] = `
 Object {
   "done": false,
   "value": Object {
@@ -47,7 +47,7 @@ Object {
 }
 `;
 
-exports[`makeExecutableSchema works for subscriptions as well 1`] = `
+exports[`composeSchema works for subscriptions as well 1`] = `
 Object {
   "done": false,
   "value": Object {

@@ -6,9 +6,11 @@ import {
   addSubscriptionChannelsToSchema,
   addResolveFunctionsToSchema,
   getScehmaResolvers,
-  makeExecutableSchema,
+  composeSchema,
+  decomposeSchema,
 } from '../src';
 import {
+  print,
   parse,
   subscribe,
   GraphQLScalarType,
@@ -615,13 +617,13 @@ describe('getScehmaSubscriptions', () => {
   });
 });
 
-describe('makeExecutableSchema', () => {
+describe('composeSchema', () => {
   it('Should be pass sanity', () => {
-    expect(typeof makeExecutableSchema).toBe('function');
+    expect(typeof composeSchema).toBe('function');
   });
 
   it('Able to compose simple schema', async () => {
-    const schema = makeExecutableSchema({
+    const schema = composeSchema({
       typeDefs: `
         type Query {
           simpleInt: Int
@@ -644,7 +646,7 @@ describe('makeExecutableSchema', () => {
   });
 
   it('Able to concat simple type definition', async () => {
-    const schema = makeExecutableSchema({
+    const schema = composeSchema({
       typeDefs: [`
         enum Test {
           TEST_ONE
@@ -683,7 +685,7 @@ describe('makeExecutableSchema', () => {
   it('works for subscriptions as well', async () => {
       let subVisit = false;
       let resolveVisit = false;
-      const schema = makeExecutableSchema({
+      const schema = composeSchema({
         typeDefs: `
           type Subscription {
             simpleInt: Int
@@ -724,7 +726,7 @@ describe('makeExecutableSchema', () => {
   });
 
   it('concats subscriptions as well', async () => {
-      const schema = makeExecutableSchema({
+      const schema = composeSchema({
         typeDefs: [`
           type Subscription {
             simpleInt: Int
@@ -764,4 +766,31 @@ describe('makeExecutableSchema', () => {
       const result = await (await (subscribe(schema, parse(query)))).next();
       expect(result).toMatchSnapshot();
   });
+});
+
+describe('decomposeSchema', () => {
+  it('Should be pass sanity', () => {
+    expect(typeof decomposeSchema).toBe('function');
+  });
+
+  it('Able to compose simple schema', () => {
+    const originalOptions = {
+      typeDefs: print(parse(`
+        type Query {
+          simpleInt: Int
+        }
+      `)),
+      resolvers: {
+        Query: {
+          simpleInt: () => 0,
+        },
+      },
+      subscriptions: {},
+    };
+    const schema = composeSchema(originalOptions);
+    const options = decomposeSchema(schema);
+
+    expect(options).toEqual(originalOptions);
+  });
+
 });
