@@ -415,5 +415,5 @@ function forceArray<T>(v: (T | T[])): T[] {
 }
 
 function mergeObjects<T>(objects: T[]): T {
-  return objects.reduce((last, next) => merge(true, last, next), {});
+  return objects.reduce((last, next) => merge(last, next), {});
 }

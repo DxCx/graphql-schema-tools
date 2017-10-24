@@ -805,6 +805,39 @@ describe('composeSchema', () => {
       const result = await (await (subscribe(schema, parse(query)))).next();
       expect(result).toMatchSnapshot();
   });
+
+  it('works with scalars', async () => {
+      const schema = composeSchema({
+        typeDefs: [`
+          type Query {
+            simpleInt: Int
+          }
+        `, `
+          scalar DateTime
+
+          type Query {
+            simpleDate: DateTime
+          }
+        `],
+        resolvers: [{
+          Query: {
+            simpleInt: () => 0,
+          },
+        }, {
+          DateTime: GraphQLDateTime,
+          Query: {
+            simpleDate: () => new Date(),
+          },
+        }],
+      });
+
+      const query = `query {
+        simpleDate
+      }`;
+
+      const result = await graphql(schema, query);
+      expect(result.data).toBeTruthy();
+  });
 });
 
 describe('decomposeSchema', () => {
