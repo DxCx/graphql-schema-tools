@@ -17,6 +17,7 @@ import {
   graphql,
   buildSchema,
 } from 'graphql';
+import { GraphQLDateTime } from 'graphql-iso-date';
 import { createAsyncIterator } from 'iterall';
 
 describe('addResolveFunctionsToSchema', () => {
@@ -190,6 +191,23 @@ describe('addResolveFunctionsToSchema', () => {
       expect(false).toBe(true);
     });
 
+    it("Should work with imported scalars", () => {
+      const schema = buildSchema(`
+        scalar DateTime
+
+        type Query {
+          simpleDate: DateTime
+        }
+      `);
+
+      addResolveFunctionsToSchema(schema, {
+        DateTime: GraphQLDateTime,
+        Query: {
+          simpleDate: () => new Date(),
+        },
+      });
+    });
+
     it("Should not allow __resolveType for None-Union/Interface", () => {
       const schema = buildSchema(`
         union AorB = A | B
@@ -330,6 +348,27 @@ describe('getScehmaResolvers', () => {
         }),
         Query: {
           simpleDate: () => null,
+        },
+      };
+      addResolveFunctionsToSchema(schema, originalResolvers);
+      const resolvers = getScehmaResolvers(schema);
+
+      expect(resolvers).toEqual(originalResolvers);
+    });
+
+    it("Works with imported scalar types", () => {
+      const schema = buildSchema(`
+        scalar DateTime
+
+        type Query {
+          simpleDate: DateTime
+        }
+      `);
+
+      const originalResolvers =  {
+        DateTime: GraphQLDateTime,
+        Query: {
+          simpleDate: () => new Date(),
         },
       };
       addResolveFunctionsToSchema(schema, originalResolvers);
