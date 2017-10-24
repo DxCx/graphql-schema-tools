@@ -166,8 +166,8 @@ export function decomposeSchema<TSource, TContext>(
 ): IExecutableSchemaParts<TSource, TContext> {
   return {
     typeDefs: printSchema(schema),
-    resolvers: getScehmaResolvers(schema),
-    subscriptions: getScehmaSubscriptions(schema),
+    resolvers: getSchemaResolvers(schema),
+    subscriptions: getSchemaSubscriptions(schema),
   };
 };
 
@@ -213,7 +213,7 @@ export function addSubscriptionChannelsToSchema<TSource, TContext>(
  * This function is used to get subscriptions
  * object from given schema.
  */
-export function getScehmaSubscriptions<TSource, TContext>(schema: GraphQLSchema): ISubscriptions<TSource, TContext> {
+export function getSchemaSubscriptions<TSource, TContext>(schema: GraphQLSchema): ISubscriptions<TSource, TContext> {
   const type = schema.getSubscriptionType();
   if ( !type ) {
     return {};
@@ -294,7 +294,7 @@ export function addResolveFunctionsToSchema<TSource, TContext>(
  * This function is used to get resolvers
  * object from given schema.
  */
-export function getScehmaResolvers<TSource, TContext>(schema: GraphQLSchema): IResolvers<TSource, TContext> {
+export function getSchemaResolvers<TSource, TContext>(schema: GraphQLSchema): IResolvers<TSource, TContext> {
   return Object.keys(schema.getTypeMap()).reduce((types, typeName) => {
     // Skip internal types.
     if ( typeName.startsWith('__') ) {

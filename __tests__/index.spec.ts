@@ -2,10 +2,10 @@
 
 import 'jest';
 import {
-  getScehmaSubscriptions,
+  getSchemaSubscriptions,
   addSubscriptionChannelsToSchema,
   addResolveFunctionsToSchema,
-  getScehmaResolvers,
+  getSchemaResolvers,
   composeSchema,
   decomposeSchema,
 } from '../src';
@@ -306,7 +306,7 @@ describe('addResolveFunctionsToSchema', () => {
     });
 });
 
-describe('getScehmaResolvers', () => {
+describe('getSchemaResolvers', () => {
     it('Should be pass sanity', () => {
         expect(typeof addResolveFunctionsToSchema).toBe('function');
     });
@@ -327,7 +327,7 @@ describe('getScehmaResolvers', () => {
         },
       };
       addResolveFunctionsToSchema(schema, originalResolvers);
-      const resolvers = getScehmaResolvers(schema);
+      const resolvers = getSchemaResolvers(schema);
 
       expect(resolvers).toEqual(originalResolvers);
     });
@@ -351,7 +351,7 @@ describe('getScehmaResolvers', () => {
         },
       };
       addResolveFunctionsToSchema(schema, originalResolvers);
-      const resolvers = getScehmaResolvers(schema);
+      const resolvers = getSchemaResolvers(schema);
 
       expect(resolvers).toEqual(originalResolvers);
     });
@@ -372,7 +372,7 @@ describe('getScehmaResolvers', () => {
         },
       };
       addResolveFunctionsToSchema(schema, originalResolvers);
-      const resolvers = getScehmaResolvers(schema);
+      const resolvers = getSchemaResolvers(schema);
 
       expect(resolvers).toEqual(originalResolvers);
     });
@@ -402,7 +402,7 @@ describe('getScehmaResolvers', () => {
         },
       };
       addResolveFunctionsToSchema(schema, originalResolvers);
-      const resolvers = getScehmaResolvers(schema);
+      const resolvers = getSchemaResolvers(schema);
 
       expect(resolvers).toEqual(originalResolvers);
     });
@@ -439,7 +439,7 @@ describe('getScehmaResolvers', () => {
         },
       };
       addResolveFunctionsToSchema(schema, originalResolvers);
-      const resolvers = getScehmaResolvers(schema);
+      const resolvers = getSchemaResolvers(schema);
 
       expect(resolvers).toEqual(originalResolvers);
     });
@@ -461,7 +461,7 @@ describe('getScehmaResolvers', () => {
         },
       };
       addResolveFunctionsToSchema(schema, originalResolvers);
-      const resolvers = getScehmaResolvers(schema);
+      const resolvers = getSchemaResolvers(schema);
 
       expect(resolvers).toEqual(originalResolvers);
     });
@@ -577,9 +577,9 @@ describe('addSubscriptionChannelsToSchema', () => {
   });
 });
 
-describe('getScehmaSubscriptions', () => {
+describe('getSchemaSubscriptions', () => {
   it('Should be pass sanity', () => {
-    expect(typeof getScehmaSubscriptions).toBe('function');
+    expect(typeof getSchemaSubscriptions).toBe('function');
   });
 
   it('Should work on simple example', () => {
@@ -606,7 +606,7 @@ describe('getScehmaSubscriptions', () => {
       };
       addSubscriptionChannelsToSchema(schema, originalSubscriptions);
 
-      const subscriptions = getScehmaSubscriptions(schema);
+      const subscriptions = getSchemaSubscriptions(schema);
       expect(subscriptions).toEqual(originalSubscriptions);
   });
 
@@ -622,7 +622,7 @@ describe('getScehmaSubscriptions', () => {
           simpleInt: () => 0,
         },
       });
-      const subscriptions = getScehmaSubscriptions(schema);
+      const subscriptions = getSchemaSubscriptions(schema);
       expect(subscriptions).toEqual({});
   });
 
@@ -651,7 +651,7 @@ describe('getScehmaSubscriptions', () => {
       };
       addSubscriptionChannelsToSchema(schema, originalSubscriptions);
 
-      const subscriptions = getScehmaSubscriptions(schema);
+      const subscriptions = getSchemaSubscriptions(schema);
       expect(subscriptions).toEqual(originalSubscriptions);
   });
 });
